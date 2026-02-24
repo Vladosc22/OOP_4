@@ -1,0 +1,3 @@
+/Users/vlados/Desktop/UTM/Anu II/POO/POO Lab 4/cmake-build-debug/CMakeFiles/POO_Lab_4.dir
+/Users/vlados/Desktop/UTM/Anu II/POO/POO Lab 4/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/vlados/Desktop/UTM/Anu II/POO/POO Lab 4/cmake-build-debug/CMakeFiles/rebuild_cache.dir

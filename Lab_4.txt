@@ -1,0 +1,790 @@
+#include <iostream>
+#include <string>
+#include <cstring>
+using namespace std;
+
+class Abonament {
+private:
+    string tip;
+    int durata;
+    double pret;
+    string dataProcurare;
+    string dataActivare;
+    string dataExpirare;
+    bool procurat;
+    bool activ;
+
+public:
+    Abonament(){
+        tip = "Fara";
+        durata = 0;
+        pret = 0;
+        dataProcurare = "";
+        dataActivare = "";
+        dataExpirare = "";
+        procurat = false;
+        activ = false;
+    }
+
+    // OPERATORI SUPRAÎNCĂRCAȚI pentru Abonament
+    
+    // Operator == (comparare) - Relevant pentru a verifica dacă două abonamente sunt identice
+    bool operator==(const Abonament& other) const {
+        return (tip == other.tip && durata == other.durata && pret == other.pret);
+    }
+    
+    // Operator != (inegalitate) - Complementar operatorului ==
+    bool operator!=(const Abonament& other) const {
+        return !(*this == other);
+    }
+    
+    // Operator < (mai mic) - Relevant pentru sortarea abonamentelor după preț
+    bool operator<(const Abonament& other) const {
+        return pret < other.pret;
+    }
+    
+    // Operator << (stream output) - Pentru afișarea ușoară a detaliilor abonamentului
+    friend ostream& operator<<(ostream& os, const Abonament& abonament);
+
+    string getTip() const { 
+        return tip; 
+    }
+    int getDurata() const { 
+        return durata; 
+    }
+    double getPret() const { 
+        return pret; 
+    }
+    string getDataProcurare() const { 
+        return dataProcurare; 
+    }
+    string getDataActivare() const { 
+        return dataActivare; 
+    }
+    string getDataExpirare() const { 
+        return dataExpirare; 
+    }
+    bool esteProcurat() const { 
+        return procurat; 
+    }
+    bool esteActiv() const { 
+        return activ; 
+    }
+
+    void setTip(string t) {
+        if (t != "") {
+            tip = t;
+        }
+    }
+
+    void setDurata(int d) {
+        if (d > 0) {
+            durata = d;
+        }
+    }
+
+    void setPret(double p) {
+        if (p > 0) {
+            pret = p;
+        }
+    }
+
+    void setDataProcurare(string data) {
+        if (validareData(data)) {
+            dataProcurare = data;
+            procurat = true;
+        }
+    }
+
+    void setDataActivare(string data) {
+        if (validareData(data)) {
+            dataActivare = data;
+            activ = true;
+            dataExpirare = calculeazaDataExpirare(data);
+        }
+    }
+
+    bool validareData(string data) {
+        // Format: YYYY-MM-DD
+        if (data.length() != 10) return false;
+        if (data[4] != '-' || data[7] != '-') return false;
+        
+        for (int i = 0; i < 10; i++) {
+            if (i != 4 && i != 7) {
+                if (data[i] < '0' || data[i] > '9') return false;
+            }
+        }
+        
+        int luna = stoi(data.substr(5, 2));
+        int zi = stoi(data.substr(8, 2));
+        
+        if (luna < 1 || luna > 12) {
+            cout << "Eroare: Luna trebuie sa fie intre 1 si 12!" << endl;
+            return false;
+        }
+        if (zi < 1 || zi > 31) {
+            cout << "Eroare: Ziua trebuie sa fie intre 1 si 31!" << endl;
+            return false;
+        }
+        
+        return true;
+    }
+
+    string calculeazaDataExpirare(string dataStart) {
+        int an = stoi(dataStart.substr(0, 4));
+        int luna = stoi(dataStart.substr(5, 2));
+        int zi = stoi(dataStart.substr(8, 2));
+        
+        zi += durata;
+        if (zi > 30) {
+            luna += zi / 30;
+            zi = zi % 30;
+        }
+        if (luna > 12) {
+            an += luna / 12;
+            luna = luna % 12;
+        }
+        
+        string result = to_string(an) + "-";
+        if (luna < 10) result += "0";
+        result += to_string(luna) + "-";
+        if (zi < 10) result += "0";
+        result += to_string(zi);
+        
+        return result;
+    }
+
+    void afiseaza() {
+        if (!procurat) {
+            cout << "  Abonament: Fara abonament" << endl;
+        } else {
+            cout << "  Tip: " << tip << endl;
+            cout << "  Durata: " << durata << " zile" << endl;
+            cout << "  Pret: " << pret << " MDL" << endl;
+            cout << "  Data procurare: " << dataProcurare << endl;
+            if (activ) {
+                cout << "  Data activare: " << dataActivare << endl;
+                cout << "  Data expirare: " << dataExpirare << endl;
+                
+                string dataAzi;
+                cout << "  Introduceti data de azi (YYYY-MM-DD) pentru verificare status: ";
+                cin >> dataAzi;
+                
+                if (dataAzi >= dataExpirare) {
+                    cout << "  Status: EXPIRAT" << endl;
+                } else {
+                    cout << "  Status: ACTIV" << endl;
+                }
+            } else {
+                cout << "  Status: PROCURAT (neactivat)" << endl;
+            }
+        }
+    }
+};
+
+// Implementare operator << pentru Abonament
+ostream& operator<<(ostream& os, const Abonament& abonament) {
+    if (!abonament.procurat) {
+        os << "Fara abonament";
+    } else {
+        os << "Tip: " << abonament.tip << ", Durata: " << abonament.durata 
+           << " zile, Pret: " << abonament.pret << " MDL";
+        if (abonament.activ) {
+            os << ", Activ pana la: " << abonament.dataExpirare;
+        } else {
+            os << ", Neactivat";
+        }
+    }
+    return os;
+}
+
+class Sala;
+
+double calculeazaReducere(class Client& client, Abonament& abonament);
+
+class Client {
+private:
+    string nume;
+    int varsta;
+    string telefon;
+    double sold;
+    Abonament abonament;
+
+public:
+    Client() {
+        nume = "";
+        varsta = 0;
+        telefon = "";
+        sold = 0;
+    }
+
+    // OPERATORI SUPRAÎNCĂRCAȚI pentru Client
+    
+    // Operator == (comparare) - verifica dacă doi clienți sunt identici (după telefon)
+    bool operator==(const Client& other) const {
+        return telefon == other.telefon;
+    }
+    
+    // Operator > (mai mare) - compararea clienților după vârstă
+    bool operator>(const Client& other) const {
+        return varsta > other.varsta;
+    }
+    
+    // Operator += (adăugare sold) - Pentru a adăuga sold într-un mod mai natural
+    Client& operator+=(double suma) {
+        if (suma > 0) {
+            sold += suma;
+        }
+        return *this;
+    }
+    
+    // Operator << (stream output) - afișarea ușoară a profilului clientului
+    friend ostream& operator<<(ostream& os, const Client& client);
+
+    string getNume() const { 
+        return nume; 
+    }
+    int getVarsta() const { 
+        return varsta; 
+    }
+    string getTelefon() const { 
+        return telefon; 
+    }
+    double getSold() const { 
+        return sold; 
+    }
+    Abonament& getAbonament() { 
+        return abonament; 
+    }
+    const Abonament& getAbonament() const { 
+        return abonament; 
+    }
+
+    void setNume(string n) {
+        if (n != "") {
+            nume = n;
+        } else {
+            cout << "Eroare: Numele nu poate fi gol!" << endl;
+        }
+    }
+
+    void setVarsta(int v) {
+        if (v > 0 && v <= 100) {
+            varsta = v;
+        } else {
+            cout << "Eroare: Varsta trebuie sa fie intre 1 si 100 ani!" << endl;
+        }
+    }
+
+    void setTelefon(string t) {
+        if (validareTelefon(t)) {
+            telefon = t;
+        } else {
+            cout << "Eroare: Telefon invalid! Folositi format: 069123456 sau +373XXXXXXXX" << endl;
+        }
+    }
+
+    bool validareTelefon(string t) {
+        if (t.length() == 9) {
+            for (int i = 0; i < 9; i++) {
+                if (t[i] < '0' || t[i] > '9') return false;
+            }
+            return true;
+        }
+        if (t.length() == 12 && t[0] == '+') {
+            for (int i = 1; i < 12; i++) {
+                if (t[i] < '0' || t[i] > '9') return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void adaugaSold(double suma) {
+        if (suma > 0) {
+            sold += suma;
+            cout << "Sold incarcat cu succes! Sold curent: " << sold << " MDL" << endl;
+        } else {
+            cout << "Eroare: Suma invalida!" << endl;
+        }
+    }
+
+    void afiseazaProfil() {
+        cout << "\n- PROFIL CLIENT -" << endl;
+        cout << "Nume: " << nume << endl;
+        cout << "Varsta: " << varsta << " ani" << endl;
+        cout << "Telefon: " << telefon << endl;
+        cout << "Sold: " << sold << " MDL" << endl;
+        cout << "\n=== ABONAMENT ===" << endl;
+        abonament.afiseaza();
+        cout << "===================" << endl;
+    }
+
+    friend class Sala;
+    friend double calculeazaReducere(Client& client, Abonament& abonament);
+};
+
+// Implementare operator << pentru Client
+ostream& operator<<(ostream& os, const Client& client) {
+    os << "Nume: " << client.nume << ", Varsta: " << client.varsta 
+       << " ani, Telefon: " << client.telefon << ", Sold: " << client.sold << " MDL";
+    return os;
+}
+
+double calculeazaReducere(Client& client, Abonament& abonament) {
+    double reducere = 0;
+    
+    if (client.varsta < 18) {
+        reducere = 0.20; // 20% pentru minori
+    } else if (client.varsta >= 60) {
+        reducere = 0.15; // 15% pentru pensionari
+    }
+    
+    if (abonament.getDurata() >= 90) {
+        reducere += 0.10; // +10% pentru 3 luni+
+    }
+    
+    if (reducere > 0.40) reducere = 0.40; // Max 40%
+    
+    return reducere;
+}
+
+class Sala {
+private:
+    Client* clienti;
+    int nrClienti;
+    int capacitate;
+
+public:
+    Sala() {
+        capacitate = 10;
+        clienti = new Client[capacitate];
+        nrClienti = 0;
+    }
+
+    ~Sala() {
+        delete[] clienti;
+    }
+
+    // OPERATORI SUPRAÎNCĂRCAȚI pentru Sala
+    
+    // Operator [] (indexare) - Pentru accesarea ușoară a clienților
+    Client& operator[](int index) {
+        if (index < 0 || index >= nrClienti) {
+            throw out_of_range("Index invalid!");
+        }
+        return clienti[index];
+    }
+    
+    // Operator += (adăugare client) - Pentru a adăuga clienți într-un mod mai natural
+    Sala& operator+=(const Client& client) {
+        if (nrClienti >= capacitate) {
+            cout << "Sala este plina!" << endl;
+            return *this;
+        }
+        clienti[nrClienti] = client;
+        nrClienti++;
+        return *this;
+    }
+    
+    // Operator == (comparare) - Verifică dacă două săli au același număr de clienți
+    bool operator==(const Sala& other) const {
+        return nrClienti == other.nrClienti;
+    }
+    
+    // Operator << (stream output) - Pentru afișarea informațiilor despre sală
+    friend ostream& operator<<(ostream& os, const Sala& sala);
+
+    void adaugaClient() {
+        if (nrClienti >= capacitate) {
+            cout << "Sala este plina!" << endl;
+            return;
+        }
+
+        Client nou;
+        string nume, telefon;
+        int varsta;
+
+        cout << "\n=== CREARE CLIENT NOU ===" << endl;
+        
+        do {
+            cout << "Nume: ";
+            cin.ignore();
+            getline(cin, nume);
+            if (nume == "") {
+                cout << "Eroare: Numele nu poate fi gol!" << endl;
+            }
+        } while (nume == "");
+        nou.setNume(nume);
+
+        bool varstaValida = false;
+        do {
+            cout << "Varsta: ";
+            cin >> varsta;
+            
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(10000, '\n');
+                cout << "Eroare: Trebuie sa introduceti doar cifre pentru varsta!" << endl;
+            } else {
+                nou.setVarsta(varsta);
+                if (nou.getVarsta() != 0) {
+                    varstaValida = true;
+                }
+            }
+        } while (!varstaValida);
+
+        bool telefonValid = false;
+        do {
+            cout << "Telefon (ex: 069123456): ";
+            cin >> telefon;
+
+            bool telefonExista = false;
+            for (int i = 0; i < nrClienti; i++) {
+                string tel1 = clienti[i].telefon;
+                string tel2 = telefon;
+
+                if (tel1.length() == 9 && tel1[0] == '0') tel1 = "+373" + tel1.substr(1);
+                if (tel2.length() == 9 && tel2[0] == '0') tel2 = "+373" + tel2.substr(1);
+
+                if (tel1 == tel2) {
+                    cout << "Eroare: Acest telefon este deja inregistrat!" << endl;
+                    telefonExista = true;
+                    break;
+                }
+            }
+
+            
+            if (!telefonExista) {
+                nou.setTelefon(telefon);
+                if (nou.telefon != "") {
+                    telefonValid = true;
+                }
+            }
+        } while (!telefonValid);
+
+        // Utilizare operator += pentru adăugare client
+        *this += nou;
+        cout << "Client adaugat cu succes!" << endl;
+    }
+
+    void listaClienti() {
+        if (nrClienti == 0) {
+            cout << "\nNu exista clienti inregistrati." << endl;
+            return;
+        }
+
+        cout << "\n- LISTA CLIENTI -" << endl;
+        for (int i = 0; i < nrClienti; i++) {
+            cout << i + 1 << ". " << clienti[i].nume << " - " << clienti[i].telefon << endl;
+        }
+    }
+
+    int autentificare(string telefon) {
+        for (int i = 0; i < nrClienti; i++) {
+            if (clienti[i].telefon == telefon) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    void meniuPrincipal(int index) {
+        int optiune;
+        do {
+            cout << "\n- MENIU PRINCIPAL -" << endl;
+            cout << "Bun venit, " << clienti[index].nume << "!" << endl;
+            cout << "1. Vizualizare profil si abonament" << endl;
+            cout << "2. Procurare abonament" << endl;
+            cout << "3. Activare abonament" << endl;
+            cout << "4. Incarcare sold" << endl;
+            cout << "5. Modificare date personale" << endl;
+            cout << "6. Testare operatori supraincarcati" << endl;
+            cout << "7. Deconectare" << endl;
+            cout << "Optiune: ";
+            cin >> optiune;
+
+            switch (optiune) {
+                case 1:
+                    clienti[index].afiseazaProfil();
+                    break;
+                case 2:
+                    procuraAbonament(index);
+                    break;
+                case 3:
+                    activeazaAbonament(index);
+                    break;
+                case 4:
+                    incarcaSold(index);
+                    break;
+                case 5:
+                    modificaDate(index);
+                    break;
+                case 6:
+                    testeazaOperatori(index);
+                    break;
+                case 7:
+                    cout << "Deconectare..." << endl;
+                    break;
+                default:
+                    cout << "Optiune invalida!" << endl;
+            }
+        } while (optiune != 7);
+    }
+
+    void procuraAbonament(int index) {
+        if (clienti[index].abonament.esteProcurat()) {
+            cout << "Aveti deja un abonament!" << endl;
+            return;
+        }
+
+        cout << "\n=== TIPURI DE ABONAMENT ===" << endl;
+        cout << "1. Zilnic (1 zi) - 50 MDL" << endl;
+        cout << "2. Saptamanal (7 zile) - 300 MDL" << endl;
+        cout << "3. Lunar (30 zile) - 1000 MDL" << endl;
+        cout << "4. Trimestrial (90 zile) - 2500 MDL" << endl;
+        cout << "Alegeti: ";
+        
+        int tip;
+        cin >> tip;
+
+        Abonament abonamentNou;
+        switch (tip) {
+            case 1:
+                abonamentNou.setTip("Zilnic");
+                abonamentNou.setDurata(1);
+                abonamentNou.setPret(50);
+                break;
+            case 2:
+                abonamentNou.setTip("Saptamanal");
+                abonamentNou.setDurata(7);
+                abonamentNou.setPret(300);
+                break;
+            case 3:
+                abonamentNou.setTip("Lunar");
+                abonamentNou.setDurata(30);
+                abonamentNou.setPret(1000);
+                break;
+            case 4:
+                abonamentNou.setTip("Trimestrial");
+                abonamentNou.setDurata(90);
+                abonamentNou.setPret(2500);
+                break;
+            default:
+                cout << "Optiune invalida!" << endl;
+                return;
+        }
+
+        double reducere = calculeazaReducere(clienti[index], abonamentNou);
+        double pretFinal = abonamentNou.getPret() * (1 - reducere);
+
+        cout << "\nPret initial: " << abonamentNou.getPret() << " MDL" << endl;
+        if (reducere > 0) {
+            cout << "Reducere aplicata: " << (reducere * 100) << "%" << endl;
+        }
+        cout << "Pret final: " << pretFinal << " MDL" << endl;
+        cout << "Sold disponibil: " << clienti[index].sold << " MDL" << endl;
+
+        if (clienti[index].sold >= pretFinal) {
+            string data;
+            cout << "Data procurare (YYYY-MM-DD): ";
+            cin >> data;
+            
+            if (!abonamentNou.validareData(data)) {
+                cout << "Abonament nu a fost procurat din cauza datei invalide!" << endl;
+                return;
+            }
+            
+            // Utilizare operator += pentru adăugare sold
+            clienti[index] += (-pretFinal); // Scădere sold
+            abonamentNou.setPret(pretFinal);
+            abonamentNou.setDataProcurare(data);
+            
+            clienti[index].abonament = abonamentNou;
+            cout << "Abonament procurat cu succes!" << endl;
+            cout << "Sold ramas: " << clienti[index].sold << " MDL" << endl;
+        } else {
+            cout << "Sold insuficient! Va lipsesc " << (pretFinal - clienti[index].sold) << " MDL" << endl;
+        }
+    }
+
+    void activeazaAbonament(int index) {
+        if (!clienti[index].abonament.esteProcurat()) {
+            cout << "Nu aveti un abonament procurat!" << endl;
+            return;
+        }
+        if (clienti[index].abonament.esteActiv()) {
+            cout << "Abonamentul este deja activ!" << endl;
+            return;
+        }
+
+        string data;
+        cout << "Data activare (YYYY-MM-DD): ";
+        cin >> data;
+        
+        if (!clienti[index].abonament.validareData(data)) {
+            cout << "Abonament nu a fost activat din cauza datei invalide!" << endl;
+            return;
+        }
+        
+        clienti[index].abonament.setDataActivare(data);
+        cout << "Abonament activat cu succes!" << endl;
+    }
+
+    void incarcaSold(int index) {
+        double suma;
+        cout << "Suma de incarcat: ";
+        cin >> suma;
+        
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Eroare: Trebuie sa introduceti doar cifre!" << endl;
+            return;
+        }
+        
+        // Utilizare operator += pentru adăugare sold
+        clienti[index] += suma;
+        cout << "Sold incarcat cu succes! Sold curent: " << clienti[index].getSold() << " MDL" << endl;
+    }
+
+    void modificaDate(int index) {
+        int optiune;
+        cout << "\n1. Modificare nume" << endl;
+        cout << "2. Modificare varsta" << endl;
+        cout << "Alegeti: ";
+        cin >> optiune;
+
+        if (optiune == 1) {
+            string numeNou;
+            cout << "Nume nou: ";
+            cin.ignore();
+            getline(cin, numeNou);
+            clienti[index].setNume(numeNou);
+            cout << "Nume modificat!" << endl;
+        } else if (optiune == 2) {
+            int varstaNoua;
+            cout << "Varsta noua: ";
+            cin >> varstaNoua;
+            
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(10000, '\n');
+                cout << "Eroare: Trebuie sa introduceti doar cifre!" << endl;
+                return;
+            }
+            
+            clienti[index].setVarsta(varstaNoua);
+            if (clienti[index].getVarsta() == varstaNoua) {
+                cout << "Varsta modificata!" << endl;
+            }
+        }
+    }
+
+    // Funcție pentru testarea operatorilor supraîncărcați
+    void testeazaOperatori(int index) {
+        cout << "\n=== TESTARE OPERATORI SUPRAÎNCĂRCAȚI ===" << endl;
+        
+        // Testare operatori Client
+        cout << "\n1. Testare operatori CLIENT:" << endl;
+        cout << "Client curent: " << clienti[index] << endl;
+        
+        // Test operator += pentru sold
+        cout << "Sold inainte de adaugare: " << clienti[index].getSold() << " MDL" << endl;
+        clienti[index] += 100;
+        cout << "Sold dupa adaugare 100 MDL: " << clienti[index].getSold() << " MDL" << endl;
+        
+        // Test operator << pentru abonament
+        if (clienti[index].getAbonament().esteProcurat()) {
+            cout << "Abonament client: " << clienti[index].getAbonament() << endl;
+        }
+        
+        // Testare operatori Abonament
+        cout << "\n2. Testare operatori ABONAMENT:" << endl;
+        Abonament ab1, ab2;
+        ab1.setTip("Test1");
+        ab1.setDurata(30);
+        ab1.setPret(1000);
+        
+        ab2.setTip("Test1");
+        ab2.setDurata(30);
+        ab2.setPret(1000);
+        
+        cout << "Abonament 1 == Abonament 2: " << (ab1 == ab2 ? "DA" : "NU") << endl;
+        cout << "Abonament 1 != Abonament 2: " << (ab1 != ab2 ? "DA" : "NU") << endl;
+        
+        Abonament ab3;
+        ab3.setPret(500);
+        cout << "Abonament 1 < Abonament 3: " << (ab1 < ab3 ? "DA" : "NU") << endl;
+        
+        // Testare operatori Sala
+        cout << "\n3. Testare operatori SALA:" << endl;
+        cout << "Numar clienti in sala: " << nrClienti << endl;
+        
+        if (nrClienti > 0) {
+            try {
+                cout << "Client la index 0 (folosind operator []): " << clienti[0].getNume() << endl;
+            } catch (const out_of_range& e) {
+                cout << "Eroare: " << e.what() << endl;
+            }
+        }
+        
+        cout << "\nTestarea operatorilor s-a incheiat!" << endl;
+    }
+};
+
+// Implementare operator << pentru Sala
+ostream& operator<<(ostream& os, const Sala& sala) {
+    os << "Sala cu " << sala.nrClienti << " clienti din " << sala.capacitate << " locuri disponibile";
+    return os;
+}
+
+void meniuBaza(Sala& sala) {
+    int optiune;
+    do {
+        cout << "\n======= SISTEM MANAGEMENT SALA SPORT =======" << endl;
+        cout << "1. Creare utilizator nou" << endl;
+        cout << "2. Lista utilizatori" << endl;
+        cout << "3. Autentificare" << endl;
+        cout << "4. Afisare info sala (operator <<)" << endl;
+        cout << "5. Iesire" << endl;
+        cout << "Optiune: ";
+        cin >> optiune;
+
+        switch (optiune) {
+            case 1:
+                sala.adaugaClient();
+                break;
+            case 2:
+                sala.listaClienti();
+                break;
+            case 3: {
+                string telefon;
+                cout << "Introduceti telefon: ";
+                cin >> telefon;
+                int index = sala.autentificare(telefon);
+                if (index != -1) {
+                    cout << "Autentificare reusita!" << endl;
+                    sala.meniuPrincipal(index);
+                } else {
+                    cout << "Telefon incorect sau utilizator inexistent!" << endl;
+                }
+                break;
+            }
+            case 4:
+                cout << "Informatii sala: " << sala << endl;
+                break;
+            case 5:
+                cout << "Ciao!" << endl;
+                break;
+            default:
+                cout << "Optiune invalida!" << endl;
+        }
+    } while (optiune != 5);
+}
+
+int main() {
+    Sala sala;
+    meniuBaza(sala);
+    return 0;
+}
